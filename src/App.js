@@ -12,6 +12,7 @@ import {
   SERVICE_CHECKLIST_LABELS,
   DESIGNERS,
   CREW_MEMBERS,
+  INSTALLERS,
 } from './data/initialData';
 
 // ─── Utility ────────────────────────────────────────────────────────────────
@@ -150,7 +151,7 @@ function ProjectForm({ initial, onSave, onCancel }) {
   };
 
   const [form, setForm] = useState(initial || {
-    client: '', jobNumber: '', designer: '', contractValue: '',
+    client: '', jobNumber: '', designer: '', installer: '', contractValue: '',
     soldDate: '', targetDate: '', location: '', status: 'Active',
     notes: '', checklist: emptyChecklist(),
   });
@@ -184,6 +185,7 @@ function ProjectForm({ initial, onSave, onCancel }) {
         <FieldInput label="Client Name" value={form.client} onChange={set('client')} required />
         <FieldInput label="Job Number" value={form.jobNumber} onChange={set('jobNumber')} />
         <FieldInput label="Designer" value={form.designer} onChange={set('designer')} options={DESIGNERS} />
+        <FieldInput label="Installer" value={form.installer} onChange={set('installer')} options={INSTALLERS} />
         <FieldInput label="Contract Value ($)" value={form.contractValue} onChange={set('contractValue')} type="number" />
         <FieldInput label="Sold Date" value={form.soldDate} onChange={set('soldDate')} type="date" />
         <FieldInput label="Target Date" value={form.targetDate} onChange={set('targetDate')} />
@@ -297,6 +299,7 @@ function ProjectsTab() {
                 <th className="text-left px-4 py-3">Client</th>
                 <th className="text-left px-4 py-3">Job#</th>
                 <th className="text-left px-4 py-3">Designer</th>
+                <th className="text-left px-4 py-3">Installer</th>
                 <th className="text-right px-4 py-3">Value</th>
                 <th className="text-left px-4 py-3">Sold</th>
                 <th className="text-left px-4 py-3">Target</th>
@@ -308,7 +311,7 @@ function ProjectsTab() {
             </thead>
             <tbody>
               {filtered.length === 0 && (
-                <tr><td colSpan={10} className="text-center py-10 text-slate-500">No projects found.</td></tr>
+                <tr><td colSpan={11} className="text-center py-10 text-slate-500">No projects found.</td></tr>
               )}
               {filtered.map(p => {
                 const pct = progressOf(p.checklist, ALL_PROJECT_CHECKLIST_FIELDS);
@@ -323,6 +326,9 @@ function ProjectsTab() {
                       <td className="px-4 py-3 text-slate-300">{p.jobNumber}</td>
                       <td className="px-4 py-3">
                         <span className="bg-blue-900 text-blue-200 text-xs px-2 py-0.5 rounded font-mono">{p.designer}</span>
+                      </td>
+                      <td className="px-4 py-3">
+                        {p.installer ? <span className="bg-purple-900 text-purple-200 text-xs px-2 py-0.5 rounded font-mono">{p.installer}</span> : <span className="text-slate-600">—</span>}
                       </td>
                       <td className="px-4 py-3 text-right text-emerald-300 font-medium">{fmtCurrency(p.contractValue)}</td>
                       <td className="px-4 py-3 text-slate-300">{fmtDate(p.soldDate)}</td>

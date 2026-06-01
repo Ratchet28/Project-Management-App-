@@ -2,6 +2,7 @@
 
 export const DESIGNERS = ['JT', 'CT', 'MH', 'Other'];
 export const CREW_MEMBERS = ['Scott', 'Jacob', 'Isaak', 'Pete', 'Nick', 'Monty', 'Other'];
+export const INSTALLERS = ['Scott', 'Jacob', 'Isaak', 'Pete', 'Nick', 'Monty', 'Other'];
 
 export const PROJECT_CHECKLIST_FIELDS_ROW1 = [
   'DPM', 'SITE_SURVEY', 'DRAWINGS', 'PERMIT', 'FSSC_PRODUCT',
