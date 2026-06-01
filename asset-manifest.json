@@ -1,10 +1,10 @@
 {
   "files": {
-    "main.js": "/Project-Management-App-/static/js/main.775f92ab.js",
+    "main.js": "/Project-Management-App-/static/js/main.d0643778.js",
     "index.html": "/Project-Management-App-/index.html",
-    "main.775f92ab.js.map": "/Project-Management-App-/static/js/main.775f92ab.js.map"
+    "main.d0643778.js.map": "/Project-Management-App-/static/js/main.d0643778.js.map"
   },
   "entrypoints": [
-    "static/js/main.775f92ab.js"
+    "static/js/main.d0643778.js"
   ]
 }
