@@ -143,7 +143,7 @@ function FieldInput({ label, value, onChange, type = 'text', options, textarea, 
 
 // ─── Project Form ────────────────────────────────────────────────────────────
 
-function InstallerManagerModal({ installers, onSave, onClose }) {
+function InstallerManagerModal({ title = 'Manage Installers', installers, onSave, onClose }) {
   const [list, setList] = useState([...installers]);
   const [newName, setNewName] = useState('');
 
@@ -159,7 +159,7 @@ function InstallerManagerModal({ installers, onSave, onClose }) {
   }
 
   return (
-    <Modal title="Manage Installers" onClose={onClose}>
+    <Modal title={title} onClose={onClose}>
       <div className="flex flex-col gap-4">
         <div className="flex gap-2">
           <input
@@ -200,7 +200,7 @@ function InstallerManagerModal({ installers, onSave, onClose }) {
   );
 }
 
-function ProjectForm({ initial, installers, onSave, onCancel }) {
+function ProjectForm({ initial, designers, installers, onSave, onCancel }) {
   const emptyChecklist = () => {
     const c = {};
     ALL_PROJECT_CHECKLIST_FIELDS.forEach(f => { c[f] = '0'; });
@@ -241,7 +241,7 @@ function ProjectForm({ initial, installers, onSave, onCancel }) {
       <div className="grid grid-cols-2 gap-4">
         <FieldInput label="Client Name" value={form.client} onChange={set('client')} required />
         <FieldInput label="Job Number" value={form.jobNumber} onChange={set('jobNumber')} />
-        <FieldInput label="Designer" value={form.designer} onChange={set('designer')} options={DESIGNERS} />
+        <FieldInput label="Designer" value={form.designer} onChange={set('designer')} options={designers} />
         <FieldInput label="Installer" value={form.installer} onChange={set('installer')} options={installers} />
         <FieldInput label="Contract Value ($)" value={form.contractValue} onChange={set('contractValue')} type="number" />
         <FieldInput label="Sold Date" value={form.soldDate} onChange={set('soldDate')} type="date" />
@@ -267,6 +267,7 @@ function ProjectForm({ initial, installers, onSave, onCancel }) {
 function ProjectsTab() {
   const [projects, setProjects] = useLocalStorage('spm_projects', initialProjects);
   const [installers, setInstallers] = useLocalStorage('spm_installers', INSTALLERS);
+  const [designers, setDesigners] = useLocalStorage('spm_designers', DESIGNERS);
   const [search, setSearch] = useState('');
   const [filterDesigner, setFilterDesigner] = useState('');
   const [filterStatus, setFilterStatus] = useState('Active');
@@ -317,13 +318,20 @@ function ProjectsTab() {
         </div>
         <select value={filterDesigner} onChange={e => setFilterDesigner(e.target.value)} className="text-sm py-2">
           <option value="">All Designers</option>
-          {DESIGNERS.map(d => <option key={d} value={d}>{d}</option>)}
+          {designers.map(d => <option key={d} value={d}>{d}</option>)}
         </select>
         <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="text-sm py-2">
           <option value="">All Status</option>
           <option value="Active">Active</option>
           <option value="Hold">Hold</option>
         </select>
+        <button
+          onClick={() => setModalMode('designers')}
+          className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+          Designers
+        </button>
         <button
           onClick={() => setModalMode('installers')}
           className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
@@ -433,6 +441,15 @@ function ProjectsTab() {
       </div>
 
       {/* Add/Edit Modal */}
+      {modalMode === 'designers' && (
+        <InstallerManagerModal
+          title="Manage Designers"
+          installers={designers}
+          onSave={setDesigners}
+          onClose={() => setModalMode(null)}
+        />
+      )}
+
       {modalMode === 'installers' && (
         <InstallerManagerModal
           installers={installers}
@@ -449,6 +466,7 @@ function ProjectsTab() {
         >
           <ProjectForm
             initial={editTarget}
+            designers={designers}
             installers={installers}
             onSave={saveProject}
             onCancel={() => { setModalMode(null); setEditTarget(null); }}
