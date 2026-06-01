@@ -89,6 +89,8 @@ function ProgressBar({ pct, color = 'bg-blue-500' }) {
 function StatusBadge({ status }) {
   const cls = status === 'Hold'
     ? 'bg-amber-900 text-amber-300 border border-amber-700'
+    : status === 'Complete'
+    ? 'bg-emerald-900 text-emerald-300 border border-emerald-700'
     : 'bg-blue-900 text-blue-300 border border-blue-700';
   return <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${cls}`}>{status}</span>;
 }
@@ -247,7 +249,7 @@ function ProjectForm({ initial, designers, installers, onSave, onCancel }) {
         <FieldInput label="Sold Date" value={form.soldDate} onChange={set('soldDate')} type="date" />
         <FieldInput label="Target Date" value={form.targetDate} onChange={set('targetDate')} />
         <FieldInput label="Location" value={form.location} onChange={set('location')} />
-        <FieldInput label="Status" value={form.status} onChange={set('status')} options={['Active', 'Hold']} />
+        <FieldInput label="Status" value={form.status} onChange={set('status')} options={['Active', 'Hold', 'Complete']} />
       </div>
       <FieldInput label="Notes" value={form.notes} onChange={set('notes')} textarea />
       <div className="border-t border-slate-600 pt-4 flex flex-col gap-4">
@@ -324,6 +326,7 @@ function ProjectsTab() {
           <option value="">All Status</option>
           <option value="Active">Active</option>
           <option value="Hold">Hold</option>
+          <option value="Complete">Complete</option>
         </select>
         <button
           onClick={() => setModalMode('designers')}
@@ -360,6 +363,10 @@ function ProjectsTab() {
         <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
           <p className="text-xs text-slate-400 uppercase tracking-wide">On Hold</p>
           <p className="text-2xl font-bold text-amber-400">{projects.filter(p => p.status === 'Hold').length}</p>
+        </div>
+        <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
+          <p className="text-xs text-slate-400 uppercase tracking-wide">Completed</p>
+          <p className="text-2xl font-bold text-emerald-400">{projects.filter(p => p.status === 'Complete').length}</p>
         </div>
       </div>
 
@@ -1001,9 +1008,11 @@ function InstallerStatsTab() {
     const assigned = projects.filter(p => p.installer === name);
     const active = assigned.filter(p => p.status === 'Active');
     const hold = assigned.filter(p => p.status === 'Hold');
+    const complete = assigned.filter(p => p.status === 'Complete');
     const totalValue = assigned.reduce((s, p) => s + (p.contractValue || 0), 0);
     const activeValue = active.reduce((s, p) => s + (p.contractValue || 0), 0);
-    return { name, assigned, active, hold, totalValue, activeValue };
+    const completedValue = complete.reduce((s, p) => s + (p.contractValue || 0), 0);
+    return { name, assigned, active, hold, complete, totalValue, activeValue, completedValue };
   });
 
   const unassigned = projects.filter(p => !p.installer || p.installer === '');
@@ -1029,6 +1038,10 @@ function InstallerStatsTab() {
           <p className="text-2xl font-bold text-blue-400">{fmtCurrency(activeTotal)}</p>
         </div>
         <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
+          <p className="text-xs text-slate-400 uppercase tracking-wide mb-1">Completed Value</p>
+          <p className="text-2xl font-bold text-emerald-300">{fmtCurrency(projects.filter(p => p.status === 'Complete').reduce((s, p) => s + (p.contractValue || 0), 0))}</p>
+        </div>
+        <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
           <p className="text-xs text-slate-400 uppercase tracking-wide mb-1">Unassigned Projects</p>
           <p className="text-2xl font-bold text-amber-400">{unassigned.length}</p>
           <p className="text-xs text-slate-500 mt-0.5">{fmtCurrency(unassignedValue)}</p>
@@ -1048,7 +1061,9 @@ function InstallerStatsTab() {
                 <th className="text-right px-4 py-3">Projects</th>
                 <th className="text-right px-4 py-3">Active</th>
                 <th className="text-right px-4 py-3">On Hold</th>
+                <th className="text-right px-4 py-3">Completed</th>
                 <th className="text-right px-4 py-3">Active Value</th>
+                <th className="text-right px-4 py-3">Completed Value</th>
                 <th className="text-right px-4 py-3">Total Value</th>
                 <th className="px-4 py-3 min-w-40">Share of Active</th>
               </tr>
@@ -1062,9 +1077,11 @@ function InstallerStatsTab() {
                       <span className="font-medium text-white">{s.name}</span>
                     </td>
                     <td className="px-4 py-3 text-right text-slate-300">{s.assigned.length}</td>
-                    <td className="px-4 py-3 text-right text-emerald-300">{s.active.length}</td>
+                    <td className="px-4 py-3 text-right text-blue-300">{s.active.length}</td>
                     <td className="px-4 py-3 text-right text-amber-300">{s.hold.length}</td>
+                    <td className="px-4 py-3 text-right text-emerald-300">{s.complete.length}</td>
                     <td className="px-4 py-3 text-right font-medium text-blue-300">{fmtCurrency(s.activeValue)}</td>
+                    <td className="px-4 py-3 text-right font-medium text-emerald-300">{fmtCurrency(s.completedValue)}</td>
                     <td className="px-4 py-3 text-right font-bold text-emerald-400">{fmtCurrency(s.totalValue)}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
@@ -1083,7 +1100,9 @@ function InstallerStatsTab() {
                   <td className="px-4 py-3 text-right text-slate-400">{unassigned.length}</td>
                   <td className="px-4 py-3 text-right text-slate-400">{unassigned.filter(p => p.status === 'Active').length}</td>
                   <td className="px-4 py-3 text-right text-slate-400">{unassigned.filter(p => p.status === 'Hold').length}</td>
+                  <td className="px-4 py-3 text-right text-slate-400">{unassigned.filter(p => p.status === 'Complete').length}</td>
                   <td className="px-4 py-3 text-right text-slate-400">{fmtCurrency(unassigned.filter(p => p.status === 'Active').reduce((s, p) => s + (p.contractValue || 0), 0))}</td>
+                  <td className="px-4 py-3 text-right text-slate-400">{fmtCurrency(unassigned.filter(p => p.status === 'Complete').reduce((s, p) => s + (p.contractValue || 0), 0))}</td>
                   <td className="px-4 py-3 text-right text-slate-400">{fmtCurrency(unassignedValue)}</td>
                   <td className="px-4 py-3" />
                 </tr>
