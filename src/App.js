@@ -4,7 +4,6 @@ import {
   initialProjects,
   initialServiceJobs,
   initialWarranty,
-  initialInventory,
   ALL_PROJECT_CHECKLIST_FIELDS,
   PROJECT_CHECKLIST_FIELDS_ROW1,
   PROJECT_CHECKLIST_FIELDS_ROW2,
@@ -13,7 +12,6 @@ import {
   SERVICE_CHECKLIST_LABELS,
   DESIGNERS,
   CREW_MEMBERS,
-  INVENTORY_CATEGORIES,
 } from './data/initialData';
 
 // ─── Utility ────────────────────────────────────────────────────────────────
@@ -801,161 +799,6 @@ function WarrantyTab() {
   );
 }
 
-// ─── Inventory Tab ────────────────────────────────────────────────────────────
-
-function InventoryForm({ initial, onSave, onCancel }) {
-  const [form, setForm] = useState(initial || {
-    category: '', product: '', colour: '', length: '', width: '', quantity: '',
-  });
-  const set = (k) => (v) => setForm(p => ({ ...p, [k]: v }));
-
-  function handleSubmit(e) {
-    e.preventDefault();
-    if (!form.product.trim()) return alert('Product name is required.');
-    onSave({ ...form, quantity: parseInt(form.quantity) || 0 });
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <div className="grid grid-cols-2 gap-4">
-        <FieldInput label="Category" value={form.category} onChange={set('category')} options={INVENTORY_CATEGORIES} />
-        <FieldInput label="Product Name" value={form.product} onChange={set('product')} required />
-        <FieldInput label="Colour" value={form.colour} onChange={set('colour')} />
-        <FieldInput label="Length" value={form.length} onChange={set('length')} />
-        <FieldInput label="Width" value={form.width} onChange={set('width')} />
-        <FieldInput label="Quantity" value={form.quantity} onChange={set('quantity')} type="number" />
-      </div>
-      <div className="flex gap-3 justify-end pt-2">
-        <button type="button" onClick={onCancel} className="px-4 py-2 rounded-lg bg-slate-700 text-slate-200 hover:bg-slate-600 text-sm font-medium">Cancel</button>
-        <button type="submit" className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold">Save Item</button>
-      </div>
-    </form>
-  );
-}
-
-function InventoryTab() {
-  const [items, setItems] = useLocalStorage('spm_inventory', initialInventory);
-  const [search, setSearch] = useState('');
-  const [filterCat, setFilterCat] = useState('');
-  const [modalMode, setModalMode] = useState(null);
-  const [editTarget, setEditTarget] = useState(null);
-  const [deleteConfirm, setDeleteConfirm] = useState(null);
-
-  const filtered = items.filter(i => {
-    if (filterCat && i.category !== filterCat) return false;
-    const q = search.toLowerCase();
-    if (q && !i.product.toLowerCase().includes(q) && !i.colour.toLowerCase().includes(q)) return false;
-    return true;
-  });
-
-  const grouped = INVENTORY_CATEGORIES.reduce((acc, cat) => {
-    const rows = filtered.filter(i => i.category === cat);
-    if (rows.length) acc[cat] = rows;
-    return acc;
-  }, {});
-
-  function saveItem(data) {
-    if (modalMode === 'add') {
-      setItems(p => [...p, { ...data, id: uid() }]);
-    } else {
-      setItems(p => p.map(x => x.id === data.id ? data : x));
-    }
-    setModalMode(null);
-    setEditTarget(null);
-  }
-
-  function deleteItem(id) {
-    setItems(p => p.filter(x => x.id !== id));
-    setDeleteConfirm(null);
-  }
-
-  return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="flex-1 min-w-48">
-          <SearchBar value={search} onChange={setSearch} placeholder="Search product, colour…" />
-        </div>
-        <select value={filterCat} onChange={e => setFilterCat(e.target.value)} className="text-sm py-2">
-          <option value="">All Categories</option>
-          {INVENTORY_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-        </select>
-        <button
-          onClick={() => { setEditTarget(null); setModalMode('add'); }}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-semibold transition-colors flex items-center gap-2"
-        >
-          <span className="text-lg leading-none">+</span> Add Item
-        </button>
-      </div>
-
-      {Object.keys(grouped).length === 0 && (
-        <div className="text-center py-12 text-slate-500">No inventory items found.</div>
-      )}
-
-      {Object.entries(grouped).map(([cat, rows]) => (
-        <div key={cat} className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
-          <div className="px-4 py-3 bg-slate-900 border-b border-slate-700">
-            <h3 className="font-semibold text-white">{cat}
-              <span className="text-xs text-slate-400 ml-2 font-normal">({rows.length} item{rows.length !== 1 ? 's' : ''})</span>
-            </h3>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-slate-400 text-xs uppercase tracking-wider border-b border-slate-700">
-                  <th className="text-left px-4 py-2">Product</th>
-                  <th className="text-left px-4 py-2">Colour</th>
-                  <th className="text-left px-4 py-2">Length</th>
-                  <th className="text-left px-4 py-2">Width</th>
-                  <th className="text-right px-4 py-2">Qty</th>
-                  <th className="px-4 py-2"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map(i => (
-                  <tr key={i.id} className="row-hover border-t border-slate-700">
-                    <td className="px-4 py-3 text-white">{i.product}</td>
-                    <td className="px-4 py-3 text-slate-300">{i.colour}</td>
-                    <td className="px-4 py-3 text-slate-300">{i.length}</td>
-                    <td className="px-4 py-3 text-slate-300">{i.width}</td>
-                    <td className="px-4 py-3 text-right">
-                      <span className={`font-bold ${i.quantity <= 5 ? 'text-amber-400' : 'text-white'}`}>{i.quantity}</span>
-                      {i.quantity <= 5 && <span className="ml-1 text-xs text-amber-400">Low</span>}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex gap-2">
-                        <button onClick={() => { setEditTarget(i); setModalMode('edit'); }} className="text-xs text-blue-400 hover:text-blue-300 transition-colors">Edit</button>
-                        <button onClick={() => setDeleteConfirm(i.id)} className="text-xs text-red-400 hover:text-red-300 transition-colors">Delete</button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      ))}
-
-      {modalMode && (
-        <Modal
-          title={modalMode === 'add' ? 'New Inventory Item' : `Edit: ${editTarget?.product}`}
-          onClose={() => { setModalMode(null); setEditTarget(null); }}
-        >
-          <InventoryForm initial={editTarget} onSave={saveItem} onCancel={() => { setModalMode(null); setEditTarget(null); }} />
-        </Modal>
-      )}
-      {deleteConfirm && (
-        <Modal title="Confirm Delete" onClose={() => setDeleteConfirm(null)}>
-          <p className="text-slate-300 mb-6">Delete this inventory item?</p>
-          <div className="flex gap-3 justify-end">
-            <button onClick={() => setDeleteConfirm(null)} className="px-4 py-2 rounded-lg bg-slate-700 text-slate-200 hover:bg-slate-600 text-sm">Cancel</button>
-            <button onClick={() => deleteItem(deleteConfirm)} className="px-4 py-2 rounded-lg bg-red-700 hover:bg-red-600 text-white text-sm font-semibold">Delete</button>
-          </div>
-        </Modal>
-      )}
-    </div>
-  );
-}
-
 // ─── Pricing Tool Tab ────────────────────────────────────────────────────────
 
 function PricingTab() {
@@ -1054,7 +897,6 @@ const TABS = [
   { id: 'projects', label: 'Sunroom Projects' },
   { id: 'service', label: 'Service Jobs' },
   { id: 'warranty', label: 'Warranty' },
-  { id: 'inventory', label: 'Inventory' },
   { id: 'pricing', label: 'Pricing Tool' },
 ];
 
@@ -1102,7 +944,6 @@ export default function App() {
         {activeTab === 'projects' && <ProjectsTab />}
         {activeTab === 'service' && <ServiceTab />}
         {activeTab === 'warranty' && <WarrantyTab />}
-        {activeTab === 'inventory' && <InventoryTab />}
         {activeTab === 'pricing' && <PricingTab />}
       </main>
     </div>
