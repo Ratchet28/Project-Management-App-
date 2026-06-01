@@ -143,7 +143,64 @@ function FieldInput({ label, value, onChange, type = 'text', options, textarea, 
 
 // ─── Project Form ────────────────────────────────────────────────────────────
 
-function ProjectForm({ initial, onSave, onCancel }) {
+function InstallerManagerModal({ installers, onSave, onClose }) {
+  const [list, setList] = useState([...installers]);
+  const [newName, setNewName] = useState('');
+
+  function add() {
+    const name = newName.trim();
+    if (!name || list.includes(name)) return;
+    setList(l => [...l, name]);
+    setNewName('');
+  }
+
+  function remove(name) {
+    setList(l => l.filter(x => x !== name));
+  }
+
+  return (
+    <Modal title="Manage Installers" onClose={onClose}>
+      <div className="flex flex-col gap-4">
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={newName}
+            onChange={e => setNewName(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), add())}
+            placeholder="Installer name…"
+            className="flex-1 text-sm"
+          />
+          <button
+            onClick={add}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-semibold transition-colors"
+          >
+            Add
+          </button>
+        </div>
+        <ul className="flex flex-col gap-1 max-h-64 overflow-y-auto">
+          {list.length === 0 && <li className="text-slate-500 text-sm text-center py-4">No installers yet.</li>}
+          {list.map(name => (
+            <li key={name} className="flex items-center justify-between bg-slate-700 rounded-lg px-3 py-2">
+              <span className="text-sm text-white">{name}</span>
+              <button
+                onClick={() => remove(name)}
+                className="text-red-400 hover:text-red-300 text-xs font-medium transition-colors"
+              >
+                Remove
+              </button>
+            </li>
+          ))}
+        </ul>
+        <div className="flex gap-3 justify-end pt-2 border-t border-slate-600">
+          <button onClick={onClose} className="px-4 py-2 rounded-lg bg-slate-700 text-slate-200 hover:bg-slate-600 text-sm transition-colors">Cancel</button>
+          <button onClick={() => { onSave(list); onClose(); }} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition-colors">Save</button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+function ProjectForm({ initial, installers, onSave, onCancel }) {
   const emptyChecklist = () => {
     const c = {};
     ALL_PROJECT_CHECKLIST_FIELDS.forEach(f => { c[f] = '0'; });
@@ -185,7 +242,7 @@ function ProjectForm({ initial, onSave, onCancel }) {
         <FieldInput label="Client Name" value={form.client} onChange={set('client')} required />
         <FieldInput label="Job Number" value={form.jobNumber} onChange={set('jobNumber')} />
         <FieldInput label="Designer" value={form.designer} onChange={set('designer')} options={DESIGNERS} />
-        <FieldInput label="Installer" value={form.installer} onChange={set('installer')} options={INSTALLERS} />
+        <FieldInput label="Installer" value={form.installer} onChange={set('installer')} options={installers} />
         <FieldInput label="Contract Value ($)" value={form.contractValue} onChange={set('contractValue')} type="number" />
         <FieldInput label="Sold Date" value={form.soldDate} onChange={set('soldDate')} type="date" />
         <FieldInput label="Target Date" value={form.targetDate} onChange={set('targetDate')} />
@@ -209,10 +266,11 @@ function ProjectForm({ initial, onSave, onCancel }) {
 
 function ProjectsTab() {
   const [projects, setProjects] = useLocalStorage('spm_projects', initialProjects);
+  const [installers, setInstallers] = useLocalStorage('spm_installers', INSTALLERS);
   const [search, setSearch] = useState('');
   const [filterDesigner, setFilterDesigner] = useState('');
   const [filterStatus, setFilterStatus] = useState('Active');
-  const [modalMode, setModalMode] = useState(null); // 'add' | 'edit'
+  const [modalMode, setModalMode] = useState(null); // 'add' | 'edit' | 'installers'
   const [editTarget, setEditTarget] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
@@ -266,6 +324,13 @@ function ProjectsTab() {
           <option value="Active">Active</option>
           <option value="Hold">Hold</option>
         </select>
+        <button
+          onClick={() => setModalMode('installers')}
+          className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+          Installers
+        </button>
         <button
           onClick={() => { setEditTarget(null); setModalMode('add'); }}
           className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-semibold transition-colors flex items-center gap-2"
@@ -368,7 +433,15 @@ function ProjectsTab() {
       </div>
 
       {/* Add/Edit Modal */}
-      {modalMode && (
+      {modalMode === 'installers' && (
+        <InstallerManagerModal
+          installers={installers}
+          onSave={setInstallers}
+          onClose={() => setModalMode(null)}
+        />
+      )}
+
+      {(modalMode === 'add' || modalMode === 'edit') && (
         <Modal
           title={modalMode === 'add' ? 'New Project' : `Edit: ${editTarget?.client}`}
           onClose={() => { setModalMode(null); setEditTarget(null); }}
@@ -376,6 +449,7 @@ function ProjectsTab() {
         >
           <ProjectForm
             initial={editTarget}
+            installers={installers}
             onSave={saveProject}
             onCancel={() => { setModalMode(null); setEditTarget(null); }}
           />
