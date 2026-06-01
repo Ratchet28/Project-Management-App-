@@ -989,12 +989,158 @@ function PricingTab() {
   );
 }
 
+// ─── Installer Stats Tab ──────────────────────────────────────────────────────
+
+function InstallerStatsTab() {
+  const [projects] = useLocalStorage('spm_projects', initialProjects);
+  const [installers] = useLocalStorage('spm_installers', INSTALLERS);
+
+  const activeProjects = projects.filter(p => p.status === 'Active');
+
+  const stats = installers.map(name => {
+    const assigned = projects.filter(p => p.installer === name);
+    const active = assigned.filter(p => p.status === 'Active');
+    const hold = assigned.filter(p => p.status === 'Hold');
+    const totalValue = assigned.reduce((s, p) => s + (p.contractValue || 0), 0);
+    const activeValue = active.reduce((s, p) => s + (p.contractValue || 0), 0);
+    return { name, assigned, active, hold, totalValue, activeValue };
+  });
+
+  const unassigned = projects.filter(p => !p.installer || p.installer === '');
+  const unassignedValue = unassigned.reduce((s, p) => s + (p.contractValue || 0), 0);
+
+  const grandTotal = projects.reduce((s, p) => s + (p.contractValue || 0), 0);
+  const activeTotal = activeProjects.reduce((s, p) => s + (p.contractValue || 0), 0);
+
+  return (
+    <div className="flex flex-col gap-6">
+      {/* Summary cards */}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
+          <p className="text-xs text-slate-400 uppercase tracking-wide mb-1">Total Projects</p>
+          <p className="text-2xl font-bold text-white">{projects.length}</p>
+        </div>
+        <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
+          <p className="text-xs text-slate-400 uppercase tracking-wide mb-1">Total Value</p>
+          <p className="text-2xl font-bold text-emerald-400">{fmtCurrency(grandTotal)}</p>
+        </div>
+        <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
+          <p className="text-xs text-slate-400 uppercase tracking-wide mb-1">Active Value</p>
+          <p className="text-2xl font-bold text-blue-400">{fmtCurrency(activeTotal)}</p>
+        </div>
+        <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
+          <p className="text-xs text-slate-400 uppercase tracking-wide mb-1">Unassigned Projects</p>
+          <p className="text-2xl font-bold text-amber-400">{unassigned.length}</p>
+          <p className="text-xs text-slate-500 mt-0.5">{fmtCurrency(unassignedValue)}</p>
+        </div>
+      </div>
+
+      {/* Per-installer breakdown */}
+      <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+        <div className="px-4 py-3 bg-slate-900 border-b border-slate-700">
+          <h3 className="font-semibold text-white">Value by Installer</h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-slate-400 text-xs uppercase tracking-wider border-b border-slate-700 bg-slate-900">
+                <th className="text-left px-4 py-3">Installer</th>
+                <th className="text-right px-4 py-3">Projects</th>
+                <th className="text-right px-4 py-3">Active</th>
+                <th className="text-right px-4 py-3">On Hold</th>
+                <th className="text-right px-4 py-3">Active Value</th>
+                <th className="text-right px-4 py-3">Total Value</th>
+                <th className="px-4 py-3 min-w-40">Share of Active</th>
+              </tr>
+            </thead>
+            <tbody>
+              {stats.map(s => {
+                const sharePct = activeTotal > 0 ? Math.round((s.activeValue / activeTotal) * 100) : 0;
+                return (
+                  <tr key={s.name} className="border-t border-slate-700 row-hover">
+                    <td className="px-4 py-3">
+                      <span className="font-medium text-white">{s.name}</span>
+                    </td>
+                    <td className="px-4 py-3 text-right text-slate-300">{s.assigned.length}</td>
+                    <td className="px-4 py-3 text-right text-emerald-300">{s.active.length}</td>
+                    <td className="px-4 py-3 text-right text-amber-300">{s.hold.length}</td>
+                    <td className="px-4 py-3 text-right font-medium text-blue-300">{fmtCurrency(s.activeValue)}</td>
+                    <td className="px-4 py-3 text-right font-bold text-emerald-400">{fmtCurrency(s.totalValue)}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 bg-slate-700 rounded-full h-2 overflow-hidden">
+                          <div className="progress-bar bg-blue-500 h-2 rounded-full" style={{ width: `${sharePct}%` }} />
+                        </div>
+                        <span className="text-xs text-slate-400 w-8 text-right">{sharePct}%</span>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+              {unassigned.length > 0 && (
+                <tr className="border-t border-slate-600 row-hover">
+                  <td className="px-4 py-3 italic text-slate-500">Unassigned</td>
+                  <td className="px-4 py-3 text-right text-slate-400">{unassigned.length}</td>
+                  <td className="px-4 py-3 text-right text-slate-400">{unassigned.filter(p => p.status === 'Active').length}</td>
+                  <td className="px-4 py-3 text-right text-slate-400">{unassigned.filter(p => p.status === 'Hold').length}</td>
+                  <td className="px-4 py-3 text-right text-slate-400">{fmtCurrency(unassigned.filter(p => p.status === 'Active').reduce((s, p) => s + (p.contractValue || 0), 0))}</td>
+                  <td className="px-4 py-3 text-right text-slate-400">{fmtCurrency(unassignedValue)}</td>
+                  <td className="px-4 py-3" />
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Project list per installer */}
+      {stats.filter(s => s.assigned.length > 0).map(s => (
+        <div key={s.name} className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+          <div className="px-4 py-3 bg-slate-900 border-b border-slate-700 flex items-center justify-between">
+            <h3 className="font-semibold text-white">{s.name}
+              <span className="text-xs text-slate-400 ml-2 font-normal">({s.assigned.length} project{s.assigned.length !== 1 ? 's' : ''})</span>
+            </h3>
+            <span className="text-sm font-bold text-emerald-400">{fmtCurrency(s.totalValue)}</span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-slate-400 text-xs uppercase tracking-wider border-b border-slate-700">
+                  <th className="text-left px-4 py-2">Client</th>
+                  <th className="text-left px-4 py-2">Job #</th>
+                  <th className="text-left px-4 py-2">Location</th>
+                  <th className="text-left px-4 py-2">Target</th>
+                  <th className="text-right px-4 py-2">Value</th>
+                  <th className="text-left px-4 py-2">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {s.assigned.map(p => (
+                  <tr key={p.id} className="border-t border-slate-700 row-hover">
+                    <td className="px-4 py-2 font-medium text-white">{p.client}</td>
+                    <td className="px-4 py-2 text-slate-300">{p.jobNumber}</td>
+                    <td className="px-4 py-2 text-slate-300">{p.location || '—'}</td>
+                    <td className="px-4 py-2 text-slate-300">{p.targetDate || '—'}</td>
+                    <td className="px-4 py-2 text-right text-emerald-300 font-medium">{fmtCurrency(p.contractValue)}</td>
+                    <td className="px-4 py-2"><StatusBadge status={p.status} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ─── App Shell ────────────────────────────────────────────────────────────────
 
 const TABS = [
   { id: 'projects', label: 'Sunroom Projects' },
   { id: 'service', label: 'Service Jobs' },
   { id: 'warranty', label: 'Warranty' },
+  { id: 'installer-stats', label: 'Installer Stats' },
   { id: 'pricing', label: 'Pricing Tool' },
 ];
 
@@ -1042,6 +1188,7 @@ export default function App() {
         {activeTab === 'projects' && <ProjectsTab />}
         {activeTab === 'service' && <ServiceTab />}
         {activeTab === 'warranty' && <WarrantyTab />}
+        {activeTab === 'installer-stats' && <InstallerStatsTab />}
         {activeTab === 'pricing' && <PricingTab />}
       </main>
     </div>
