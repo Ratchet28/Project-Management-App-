@@ -18,6 +18,9 @@ interface Props {
   onOpenTask: (phaseId: string, taskId: string) => void
   onToggleTaskDone: (phaseId: string, taskId: string) => void
   isOverdue: (task: Task) => boolean
+  newPhaseDraft: string
+  onNewPhaseDraftChange: (v: string) => void
+  onAddPhase: () => void
 }
 
 const FILTERS: StatusFilter[] = ['All', 'To Do', 'In Progress', 'Done', 'Overdue']
@@ -37,6 +40,9 @@ export default function MainPanel({
   onOpenTask,
   onToggleTaskDone,
   isOverdue,
+  newPhaseDraft,
+  onNewPhaseDraftChange,
+  onAddPhase,
 }: Props) {
   const allTasks = project.phases.flatMap((ph) => ph.tasks)
   const statPills = [
@@ -131,6 +137,38 @@ export default function MainPanel({
             />
           )
         })}
+
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            marginTop: 'var(--space-5)',
+            paddingTop: 'var(--space-3)',
+            borderTop: '1px solid var(--color-divider)',
+          }}
+        >
+          <PlusIcon style={{ color: 'color-mix(in srgb, var(--color-text) 45%, transparent)' }} />
+          <input
+            placeholder="Add task category..."
+            value={newPhaseDraft}
+            onChange={(e) => onNewPhaseDraftChange(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') onAddPhase()
+            }}
+            style={{
+              flex: 1,
+              border: 'none',
+              background: 'transparent',
+              fontSize: 14,
+              fontWeight: 600,
+              fontFamily: 'var(--font-heading)',
+              outline: 'none',
+              padding: '4px 0',
+              color: 'var(--color-text)',
+            }}
+          />
+        </div>
       </div>
     </div>
   )

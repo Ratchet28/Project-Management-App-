@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import './App.css'
 import { INITIAL_PROJECTS, PROJECT_TEMPLATES, makeTask, uid } from './data'
-import type { Project, StatusFilter, Task, TaskPriority, TaskStatus } from './types'
+import type { Phase, Project, StatusFilter, Task, TaskPriority, TaskStatus } from './types'
 import Sidebar from './components/Sidebar'
 import MainPanel from './components/MainPanel'
 import NewProjectDialog from './components/NewProjectDialog'
@@ -21,6 +21,7 @@ export default function App() {
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null)
   const [activePhaseId, setActivePhaseId] = useState<string | null>(null)
   const [drafts, setDrafts] = useState<Record<string, string>>({})
+  const [newPhaseDraft, setNewPhaseDraft] = useState('')
 
   const [newProjectOpen, setNewProjectOpen] = useState(false)
   const [newProjectName, setNewProjectName] = useState('')
@@ -72,6 +73,16 @@ export default function App() {
       })),
     )
     setDrafts((prev) => ({ ...prev, [phaseId]: '' }))
+  }
+
+  function addPhase(name: string) {
+    const title = name.trim()
+    if (!title) return
+    const newPhase: Phase = { id: uid(), name: title, tasks: [] }
+    const projectId = currentProject.id
+    setProjects((prev) => prev.map((p) => (p.id !== projectId ? p : { ...p, phases: [...p.phases, newPhase] })))
+    setExpandedPhases((prev) => ({ ...prev, [newPhase.id]: true }))
+    setNewPhaseDraft('')
   }
 
   function createProject() {
@@ -127,6 +138,9 @@ export default function App() {
         }}
         onToggleTaskDone={toggleTaskDone}
         isOverdue={isOverdue}
+        newPhaseDraft={newPhaseDraft}
+        onNewPhaseDraftChange={setNewPhaseDraft}
+        onAddPhase={() => addPhase(newPhaseDraft)}
       />
 
       <NewProjectDialog
